@@ -1,9 +1,11 @@
 class PointsList{
-	constructor(x, y){
+	constructor(x, y, color, player2){
 		this.points = [];
 		this.x = x;
 		this.y = y;
 		this.step = 15;
+        this.color = color;
+        this.player2 = player2;
 	}
 	addPointsOnLineTo(x, y){
 		var distance = dist(this.x, this.y, x, y);
@@ -32,7 +34,7 @@ class PointsList{
 			let x = point["x"];
 			let y = point["y"];
 			if(point["nextToDelete"] == 0){
-				fill(30, 100, 230);
+				fill(this.color);
 			} else if(point["nextToDelete"] == 1){
 				fill(210, 230, 40);
 			} else if(point["nextToDelete"] == 2){
@@ -57,8 +59,13 @@ class PointsList{
 						toUpdate.push(other);
                         this.points[other]["deleteDepth"] = this.points[point]["deleteDepth"] + 1;
 					}
-                    if(dist(px, py, player.x, player.y) < 30){
+                    if(dist(px, py, player.x, player.y) < 30 && !this.player2){
                         playing = false;
+                        winner = true;
+                    }
+                    if(dist(px, py, player2.x, player2.y) < 30 && this.player2){
+                        playing = false;
+                        winner = false;
                     }
 				}
 				this.points[point]["nextToDelete"] = 2;
@@ -95,15 +102,16 @@ class PointsList{
 }
 
 class Player{
-	constructor(x, y, keys){
+	constructor(x, y, color, player2){
 		this.x = x;
 		this.y = y;
-		this.keys = keys;
 		this.xv = 0;
 		this.yv = 0; 
 		this.drag = 0.95;
-		this.pointsList = new PointsList(0, 0);
-        this.pointsList.addPointsOnLineTo(100, 100);
+        this.color = color;
+        this.player2 = player2;
+		this.pointsList = new PointsList(0, 0, color, player2);
+        this.pointsList.addPointsOnLineTo(this.x, this.y);
 	}
 	update(){
 	}
@@ -144,6 +152,15 @@ class Bullet{
                 player.pointsList.points[point]["nextToDelete"] = 1;
             }         
         }
+        if(multiplayer){
+            for(var point in player2.pointsList.points){
+                var px = player2.pointsList.points[point]["x"];
+                var py = player2.pointsList.points[point]["y"];
+                if(dist(px, py, this.x, this.y) <= this.range){
+                    player2.pointsList.points[point]["nextToDelete"] = 1;
+                }         
+            }     
+        }
         return true;
     }
     display(){
@@ -168,8 +185,16 @@ class Enemy{
     }
     shooterUpdate(){
         if(frameCount % this.shootRate === 0){
-            let xv = (player.x - this.x) / dist(player.x, player.y, this.x, this.y) * this.bulletSpeed;
-            let yv = (player.y - this.y) / dist(player.x, player.y, this.x, this.y) * this.bulletSpeed;         
+            var nearestPlayer;
+            if(!multiplayer){
+                nearestPlayer = player;
+            } else {
+                var playerDist = dist(this.x, this.y, player.x, player.y);
+                var player2Dist = dist(this.x, this.y, player2.x, player2.y);
+                nearestPlayer = playerDist < player2Dist ? player : player2;
+            }
+            let xv = (nearestPlayer.x - this.x) / dist(nearestPlayer.x, nearestPlayer.y, this.x, this.y) * this.bulletSpeed;
+            let yv = (nearestPlayer.y - this.y) / dist(nearestPlayer.x, nearestPlayer.y, this.x, this.y) * this.bulletSpeed;         
             let bullet = new Bullet(this.x, this.y, xv, yv);
             this.bullets.push(bullet);
         }
@@ -205,15 +230,34 @@ var deleteDamage = 10;
 
 var maxDeleteDepth = 30;
 
-var player = new Player(100, 100);
+var player;
+var player2;
 var speed = 7;
 var dashSpeed = 60;
 
 var dashDelay = 0;
+var dashDelay2 = 0;
 var dashInterval = 40;
 
 var score = 0;
 var playing = false;
+var multiplayer = false;
+var winner;
+
+var player1Keys = {
+    "left": 65,
+    "down": 83,
+    "right":68,
+    "up": 87,
+    "dash": 16,
+};
+var player2Keys = {
+    "left": 37,
+    "down": 40,
+    "right":39,
+    "up": 38,
+    "dash": 32,
+};
 function setup() {
 	createCanvas(windowWidth / 1.05, windowHeight / 1.05);
 	background(100);
@@ -226,8 +270,16 @@ function draw() {
     if(playing){
         player.update();
         player.display();
-        var movement = handleMovement();
+        var movement = handleMovement(player1Keys, false);
         player.move(movement[0], movement[1]);
+
+        if(multiplayer){
+            player2.update();
+            player2.display();
+
+            var movement = handleMovement(player2Keys, true);
+            player2.move(movement[0], movement[1]); 
+        }
 
         spawnEnemies();
         updateEnemies();
@@ -241,9 +293,17 @@ function draw() {
 
 function handleHomeScreenInput(){
     if(keyIsDown(32)){
+        if(keyIsDown(77)){
+            multiplayer = true;
+        } else {
+            multiplayer = false;
+        }
         playing = true;
         enemies = [];
-        player = new Player(100, 100);
+        player = new Player(100, 100, color("rgb(40, 140, 222)"), false);
+        if(multiplayer){
+            player2 = new Player(200, 100, color("rgb(40, 222, 88)"), true);
+        }
     }
 }
 
@@ -252,35 +312,53 @@ function displayHomeScreen(){
     textSize(32);
     var titleText = "Explode Dot";
     var titleWidth = textWidth(titleText);
-    var titleCenter = windowWidth / 2 - titleWidth;
+    var titleCenter = windowWidth / 1.05 / 2 - titleWidth / 2;
     text(titleText, titleCenter, 200);
     textSize(18);
-    var subText = "Press Space to Start"
+    var subText = "Press Space to Start, m + Space for a Two Player Game"
     var subTextWidth = textWidth(subText);
-    var subTextCenter = windowWidth / 2 - subTextWidth;
+    var subTextCenter = windowWidth / 1.05 / 2 - subTextWidth / 2;
     text(subText, subTextCenter, 260);
+    textSize(16);
+    var winnerText = "";
+    if(multiplayer){
+        if(!winner){
+            winnerText = "Player 1 Wins"
+        } else{
+            winnerText = "Player 2 Wins"
+        }
+        var winnerTextWidth = textWidth(winnerText);
+        var winnerTextCenter = windowWidth / 1.05 / 2 - winnerTextWidth / 2;
+        text(winnerText, winnerTextCenter, 300);
+    }
 }
 
-function handleMovement(){
+function handleMovement(keys, forSecond){
     dashDelay -= 1;
+    dashDelay2 -= 1;
     var xMove = 0;
     var yMove = 0;
     var distanceMultiplier = speed;
-    if(keyIsDown(65)){
+    if(keyIsDown(keys["left"])){
         xMove -= 1;
     }
-    if(keyIsDown(83)){
+    if(keyIsDown(keys["down"])){
         yMove += 1;
     }
-    if(keyIsDown(68)){
+    if(keyIsDown(keys["right"])){
         xMove += 1;
     }
-    if(keyIsDown(87)){
+    if(keyIsDown(keys["up"])){
         yMove -= 1;
     }
-    if(keyIsDown(32) && dashDelay <= 0){
+    var delay = forSecond ? dashDelay2 : dashDelay;
+    if(keyIsDown(keys["dash"]) && delay <= 0){
         distanceMultiplier = dashSpeed;
-        dashDelay = dashInterval;
+        if(!forSecond){
+            dashDelay = dashInterval;
+        } else{
+            dashDelay2 = dashInterval;
+        }
     }
     xMove *= distanceMultiplier;
     yMove *= distanceMultiplier;
@@ -296,6 +374,9 @@ function updateEnemies(){
 function deletePoints(){
     if(frameCount % deleteFrequency == 0){
         player.pointsList.delete();
+        if(multiplayer){
+            player2.pointsList.delete();
+        }
     }
 }
 
