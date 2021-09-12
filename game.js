@@ -323,21 +323,21 @@ function handleHomeScreenInput(){
 
 function displayHomeScreen(){
     fill(0);
-    textSize(32);
+    textSize(scaledSize(32));
     var titleText = "Explode Dot";
     var titleWidth = textWidth(titleText);
-    var titleCenter = windowWidth / 1.05 / 2 - titleWidth / 2;
+    var titleCenter = windowWidth / 2.1 / 2 - titleWidth / 2;
     text(titleText, titleCenter, 200);
-    textSize(18);
+    textSize(scaledSize(18));
     var subText = "Press Space to Start, m + Space for a Two Player Game"
     var subTextWidth = textWidth(subText);
-    var subTextCenter = windowWidth / 1.05 / 2 - subTextWidth / 2;
+    var subTextCenter = windowWidth / 2.1 / 2 - subTextWidth / 2;
     text(subText, subTextCenter, 260);
-    textSize(16);
+    textSize(scaledSize(16));
     if(played){
         var p1ScoreText = `Player 1 Has a Score of ${player1Score}`;
         var p1ScoreTextWidth = textWidth(p1ScoreText);
-        var p1ScoreTextCenter = windowWidth / 1.05 / 2 - p1ScoreTextWidth / 2;
+        var p1ScoreTextCenter = windowWidth / 2.1 / 2 - p1ScoreTextWidth / 2;
         text(p1ScoreText, p1ScoreTextCenter, 340);
     }
     var winnerText = "";
@@ -348,14 +348,23 @@ function displayHomeScreen(){
             winnerText = "Player 2 Wins"
         }
         var winnerTextWidth = textWidth(winnerText);
-        var winnerTextCenter = windowWidth / 1.05 / 2 - winnerTextWidth / 2;
+        var winnerTextCenter = windowWidth / 2.1 / 2 - winnerTextWidth / 2;
         text(winnerText, winnerTextCenter, 300);
 
         var p2ScoreText = `Player 2 Has a Score of ${player2Score}`;
         var p2ScoreTextWidth = textWidth(p2ScoreText);
-        var p2ScoreTextCenter = windowWidth / 1.05 / 2 - p2ScoreTextWidth / 2;
+        var p2ScoreTextCenter = windowWidth / 2.1 / 2 - p2ScoreTextWidth / 2;
         text(p2ScoreText, p2ScoreTextCenter, 380);
     }
+    var rightAlign = windowWidth / 0.9 / 1.05;
+    textSize(scaledSize(18));
+    var aboutText = `In this game, you lay landmines anywhere you go and there will be up to two enemies shooting at you. The bullets do nothing to you if they hit you but if they hit your mines, they will blow them up causing a chain reaction. If a mine explodes next to an enemy, the enemy will die. Space to start a new game, WASD to move and Shift to dash (teleport a few inches in the direction you are moving). Multiplayer controls are the same for Player 1 (Blue) and Arrow Keys and Space to dash for Player 2 (green). First to get hit loses. Destroying an enemy gives 1 point`;
+    var aboutTextWidth = windowWidth / 3;
+    text(aboutText, rightAlign - aboutTextWidth, 520, aboutTextWidth, 900);
+}
+
+function scaledSize(size){
+    return windowWidth / (1000 / size);
 }
 
 function handleMovement(keys, forSecond){
