@@ -63,9 +63,11 @@ class PointsList{
                         playing = false;
                         winner = true;
                     }
-                    if(dist(px, py, player2.x, player2.y) < 30 && this.player2){
-                        playing = false;
-                        winner = false;
+                    if(multiplayer){
+                        if(dist(px, py, player2.x, player2.y) < 30 && this.player2){
+                            playing = false;
+                            winner = false;
+                        }
                     }
 				}
 				this.points[point]["nextToDelete"] = 2;
@@ -86,7 +88,7 @@ class PointsList{
                     var ex = enemies[enemy].x;
                     var ey = enemies[enemy].y;
                     if(dist(px, py, ex, ey) <= deleteRange){
-                        damageEnemy(enemy);
+                        damageEnemy(enemy, this.player2);
                     }
                 }
 
@@ -148,7 +150,7 @@ class Bullet{
         for(var point in player.pointsList.points){
             var px = player.pointsList.points[point]["x"];
             var py = player.pointsList.points[point]["y"];
-            if(dist(px, py, this.x, this.y) <= this.range){
+            if(dist(px, py, this.x, this.y) <= this.range && dist(player.x, player.y, this.x, this.y) >= safeArea){
                 player.pointsList.points[point]["nextToDelete"] = 1;
             }         
         }
@@ -156,7 +158,7 @@ class Bullet{
             for(var point in player2.pointsList.points){
                 var px = player2.pointsList.points[point]["x"];
                 var py = player2.pointsList.points[point]["y"];
-                if(dist(px, py, this.x, this.y) <= this.range){
+                if(dist(px, py, this.x, this.y) <= this.range && dist(player2.x, player2.y, this.x, this.y) >= safeArea){
                     player2.pointsList.points[point]["nextToDelete"] = 1;
                 }         
             }     
@@ -209,9 +211,14 @@ class Enemy{
         fill(237, 64, 64);
         ellipse(this.x, this.y, 6, 6);
     }
-    damage(amount){
+    damage(amount, player2){
         this.health -= amount;
         if(this.health <= 0){
+            if(player2){
+                player2Score += 1;
+            } else{
+                player1Score += 1;
+            }
             return true;
         }
         return false;
@@ -234,15 +241,19 @@ var player;
 var player2;
 var speed = 7;
 var dashSpeed = 60;
+var safeArea = 120;
 
 var dashDelay = 0;
 var dashDelay2 = 0;
 var dashInterval = 40;
 
-var score = 0;
+
 var playing = false;
 var multiplayer = false;
 var winner;
+var player1Score = 0;
+var player2Score = 0;
+var played = false;
 
 var player1Keys = {
     "left": 65,
@@ -301,6 +312,9 @@ function handleHomeScreenInput(){
         playing = true;
         enemies = [];
         player = new Player(100, 100, color("rgb(40, 140, 222)"), false);
+        player1Score = 0;
+        player2Score = 0;
+        played = true;
         if(multiplayer){
             player2 = new Player(200, 100, color("rgb(40, 222, 88)"), true);
         }
@@ -320,6 +334,12 @@ function displayHomeScreen(){
     var subTextCenter = windowWidth / 1.05 / 2 - subTextWidth / 2;
     text(subText, subTextCenter, 260);
     textSize(16);
+    if(played){
+        var p1ScoreText = `Player 1 Has a Score of ${player1Score}`;
+        var p1ScoreTextWidth = textWidth(p1ScoreText);
+        var p1ScoreTextCenter = windowWidth / 1.05 / 2 - p1ScoreTextWidth / 2;
+        text(p1ScoreText, p1ScoreTextCenter, 340);
+    }
     var winnerText = "";
     if(multiplayer){
         if(!winner){
@@ -330,6 +350,11 @@ function displayHomeScreen(){
         var winnerTextWidth = textWidth(winnerText);
         var winnerTextCenter = windowWidth / 1.05 / 2 - winnerTextWidth / 2;
         text(winnerText, winnerTextCenter, 300);
+
+        var p2ScoreText = `Player 2 Has a Score of ${player2Score}`;
+        var p2ScoreTextWidth = textWidth(p2ScoreText);
+        var p2ScoreTextCenter = windowWidth / 1.05 / 2 - p2ScoreTextWidth / 2;
+        text(p2ScoreText, p2ScoreTextCenter, 380);
     }
 }
 
@@ -380,8 +405,8 @@ function deletePoints(){
     }
 }
 
-function damageEnemy(enemy){
-    var dead = enemies[enemy].damage(deleteDamage);
+function damageEnemy(enemy, player2){
+    var dead = enemies[enemy].damage(deleteDamage, player2);
     if(dead){
         enemies.splice(enemy, 1);
     }
