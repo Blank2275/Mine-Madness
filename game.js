@@ -324,7 +324,7 @@ function handleHomeScreenInput(){
 function displayHomeScreen(){
     fill(0);
     textSize(scaledSize(32));
-    var titleText = "Explode Dot";
+    var titleText = "Mine Madness";
     var titleWidth = textWidth(titleText);
     var titleCenter = windowWidth / 2.1 / 2 - titleWidth / 2;
     text(titleText, titleCenter, 200);
